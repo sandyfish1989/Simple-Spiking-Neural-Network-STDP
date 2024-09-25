@@ -1,11 +1,7 @@
-import os
-import pathlib
 import time
-import imageio
 import imageio.v3 as iio
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 import utils
 
 from Neuron import Neuron
@@ -105,16 +101,6 @@ class SNN:
             return synapse_weight + self.parameters.sigma * weight_factor * (synapse_weight - abs(self.parameters.min_weight)) ** self.parameters.mu
         elif weight_factor > 0:
             return synapse_weight + self.parameters.sigma * weight_factor * (self.parameters.max_weight - synapse_weight) ** self.parameters.mu
-
-    def convert_weights_to_image(self, weights):
-        weights = np.array(weights)
-        weights = np.reshape(weights, self.parameters.image_size)
-        image = np.zeros(self.parameters.image_size)
-        for x_coordinate in range(self.parameters.image_size[0]):
-            for y_coordinate in range(self.parameters.image_size[1]):
-                image[x_coordinate][y_coordinate] = int(
-                    np.interp(weights[x_coordinate][y_coordinate], [self.parameters.min_weight, self.parameters.max_weight], [0, 255]))
-        return image
 
 
     def train(self):
@@ -216,32 +202,16 @@ class SNN:
                 self.debug_training_state(epoch, count_spikes, testing_accuracies)
 
             if epoch % self.parameters.checkpoint_interval == 0 and self.parameters.checkpoint_interval != 0:
-                self.save_checkpoint(epoch, synapses, neuron_labels_lookup)
+                utils.save_checkpoint(epoch, synapses, neuron_labels_lookup, self)
 
         # Final Checkpoint
-        self.save_checkpoint("Final", synapses, neuron_labels_lookup)
+        utils.save_checkpoint("Final", synapses, neuron_labels_lookup, self)
 
         if self.parameters.plotting_potentials:
-            self.plot_potentials_over_time(potential_thresholds, potentials)
+            utils.plot_potentials_over_time(potential_thresholds, potentials)
 
         print("Finished Training. Saved Weights and Labels.")
 
-    # Saves the weights and labels in files
-    def save_checkpoint(self, epoch, synapses, neuron_labels_lookup):
-
-        weights_path = f"Checkpoints/{self.readable_initial_timestamp}/Epoch_{epoch}/weights.csv"
-        labels_path = f"Checkpoints/{self.readable_initial_timestamp}/Epoch_{epoch}/labels.csv"
-        visualized_weights_path = f"Visualized_Weights/{self.readable_initial_timestamp}/Epoch_{epoch}/"
-
-        pathlib.Path(weights_path[:weights_path.rindex(os.path.sep)]).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(labels_path[:labels_path.rindex(os.path.sep)]).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(visualized_weights_path[:visualized_weights_path.rindex(os.path.sep)]).mkdir(parents=True, exist_ok=True)
-
-        np.savetxt(weights_path, synapses, delimiter=",")
-        np.savetxt(labels_path, neuron_labels_lookup, delimiter=',')
-
-        if self.parameters.visualize_weights:
-            self.visualize_synapse_weights_and_save(neuron_labels_lookup, synapses, visualized_weights_path)
 
     # Tests the SNN for its accuracy
     def test(self, synapses, neuron_labels_lookup, dataset):
@@ -307,22 +277,6 @@ class SNN:
         prediction = neuron_labels_lookup[np.argmax(count_spikes)]
         return prediction
 
-    def plot_potentials_over_time(self, potential_thresholds, potentials):
-        # Plotting
-        spaced_potentials = np.arange(0, len(potentials[0]), 1)
-        for i in range(self.parameters.layer2_size):
-            axes = plt.gca()
-            plt.plot(spaced_potentials, potential_thresholds[i], 'r')
-            plt.plot(spaced_potentials, potentials[i])
-            plt.show()
-
-    def visualize_synapse_weights_and_save(self, label_neuron, synapses, save_path):
-        for layer2_index in range(self.parameters.layer2_size):
-            if label_neuron[layer2_index] == -1:
-                for layer1_index in range(self.parameters.layer1_size):
-                    synapses[layer2_index][layer1_index] = 0
-            image = self.convert_weights_to_image(synapses[layer2_index])
-            imageio.imwrite(save_path / f'Neuron_{layer2_index}.png', image.astype(np.uint8))
 
     def debug_training_state(self, epoch, count_spikes, testing_accuracies):
         print(f"Epoch: {epoch} Testing Accuracy: {round(testing_accuracies[-1], 2) if testing_accuracies else 'None'} Time passed: {round(time.time() - self.initial_timestamp, 2)} seconds")
