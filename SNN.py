@@ -6,7 +6,7 @@ import imageio.v3 as iio
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import tensorflow as tf
+import utils
 
 from Neuron import Neuron
 from Parameters import Parameters
@@ -25,8 +25,6 @@ class SNN:
 
         elif self.parameters.mode == "test":
             pass
-            raise NotImplemented
-            # self.test()
 
         elif self.parameters.mode == "inference":
             prediction = self.inference(self.parameters.image_inference_path, self.parameters.weights_path, self.parameters.labels_path)
@@ -58,7 +56,7 @@ class SNN:
 
                 spike_trains.append(spike_train)
 
-        return spike_trains
+        return spike_trains  # (784, 351)
 
     def receptive_field(self, image: np.ndarray):
         image_size_x = image.shape[0]
@@ -118,26 +116,6 @@ class SNN:
                     np.interp(weights[x_coordinate][y_coordinate], [self.parameters.min_weight, self.parameters.max_weight], [0, 255]))
         return image
 
-    def preprocess_data_tf_dataset(self, images, given_labels):
-        spike_trains = []
-        labels = []
-        for image, label in zip(images, given_labels):
-            spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
-            spike_trains.append(spike_train)
-            labels.append(label)
-        return spike_trains, labels
-
-    def preprocess_data_downloaded(self, dataset_path, number_of_pictures_per_class):
-        number_of_pictures_per_class = int(number_of_pictures_per_class)
-        spike_trains = []
-        labels = []
-        for index, folder in enumerate(os.listdir(dataset_path)):
-            for image_path in os.listdir(dataset_path / folder)[:number_of_pictures_per_class]:
-                image = iio.imread(dataset_path / folder / image_path)
-                spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
-                spike_trains.append(spike_train)
-                labels.append(folder)
-        return spike_trains, labels
 
     def train(self):
         print("Starting Training...")
@@ -170,45 +148,17 @@ class SNN:
         # Creating Mapping Neurons which contains the Number they have learned
         neuron_labels_lookup = np.repeat(-1, self.parameters.layer2_size)
 
-        # Loading Dataset with Tensorflow
-        if self.parameters.use_tf_dataset:
-            (X_train, Y_train), (X_test, Y_test) = tf.keras.datasets.mnist.load_data()
-            X_train, Y_train = X_train[:self.parameters.training_images_amount], Y_train[:self.parameters.training_images_amount]
-            X_test, Y_test = X_test[:self.parameters.test_images_amount], Y_test[:self.parameters.test_images_amount]
-
-            if self.parameters.preprocessing_data:
-                print("Preprocessing data...")
-                X_train, Y_train = self.preprocess_data_tf_dataset(X_train, Y_train)
-                X_test, Y_test = self.preprocess_data_tf_dataset(X_test, Y_test)
-                print("Preprocessing finised.")
-        # If dataset is loaded from local files
-        else:
-            X_train_generator, Y_train_generator = lambda: self.downloaded_dataset_generator_X(self.parameters.train_dataset_path, self.parameters.training_images_amount / 10), lambda: self.downloaded_dataset_generator_Y(self.parameters.train_dataset_path, self.parameters.training_images_amount / 10)
-            X_test_generator, Y_test_generator = lambda: self.downloaded_dataset_generator_X(self.parameters.test_dataset_path, self.parameters.test_images_amount / 10), lambda: self.downloaded_dataset_generator_Y(self.parameters.test_dataset_path, self.parameters.test_images_amount / 10)
-
-            if self.parameters.preprocessing_data:
-                print("Preprocessing data...")
-                X_train, Y_train = self.preprocess_data_downloaded(self.parameters.train_dataset_path, self.parameters.training_images_amount / 10)
-                X_test, Y_test = self.preprocess_data_downloaded(self.parameters.test_dataset_path, self.parameters.test_images_amount / 10)
-                print("Preprocessing finised.")
+        X_train, Y_train, X_test, Y_test = utils.prepare_data(self)
 
         # Starting training
         for epoch in range(self.parameters.epochs):
-            
-            # If data is not preprocessed, the data is going to be converted again for each epoch
-            if not self.parameters.use_tf_dataset and not self.parameters.preprocessing_data:
-                X_train, Y_train = X_train_generator(), Y_train_generator()
-                X_test, Y_test = X_test_generator(), Y_test_generator()
 
             # Iterating over each image and coresponding label
             for image, label in zip(X_train, Y_train):
                 time_start = time.time()
 
-                if self.parameters.preprocessing_data:
-                    spike_train = image
-                else:
-                    # Convolving image with receptive field and encoding to generate spike train
-                    spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
+                # Convolving image with receptive field and encoding to generate spike train
+                spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
 
                 # Local variables
                 winner_index = None
@@ -299,10 +249,7 @@ class SNN:
         predictions = []
         actual_labels = []
         for image, label in zip(X_test, Y_test):
-            if self.parameters.preprocessing_data:
-                spike_train = image
-            else:
-                spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
+            spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
             prediction = self.infer(spike_train, synapses, neuron_labels_lookup)
             predictions.append(prediction)
             actual_labels.append(label)
@@ -432,15 +379,3 @@ class SNN:
 
             current_potentials[neuron_index] = neuron.potential
 
-    def downloaded_dataset_generator_X(self, dataset_path, number_of_pictures_per_class):
-        number_of_pictures_per_class = int(number_of_pictures_per_class)
-        for index, folder in enumerate(os.listdir(dataset_path)):
-            for image_path in os.listdir(dataset_path / folder)[:number_of_pictures_per_class]:
-                image = iio.imread(dataset_path / folder / image_path)
-                yield image
-
-    def downloaded_dataset_generator_Y(self, dataset_path, number_of_pictures_per_class):
-        number_of_pictures_per_class = int(number_of_pictures_per_class)
-        for index, folder in enumerate(os.listdir(dataset_path)):
-            for image_path in os.listdir(dataset_path / folder)[:number_of_pictures_per_class]:
-                yield folder

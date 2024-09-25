@@ -11,10 +11,8 @@ class Parameters:
     checkpoint_interval = 1
     train_dataset_path = "MNIST/training/"
     test_dataset_path = "MNIST/testing/"
-    preprocessing_data = False
     training_images_amount = 800
     test_images_amount = 100
-    use_tf_dataset: bool = True
     plotting_potentials = False
     visualize_weights = False
     testing = True
@@ -66,10 +64,8 @@ class Parameters:
     @plac.opt('checkpoint_interval', abbrev='checkpoint_interval', help="Script Setting", type=int)
     @plac.opt('train_dataset_path', abbrev='train_dataset_path', help="Script Setting", type=pathlib.Path)
     @plac.opt('test_dataset_path', abbrev='test_dataset_path', help="Script Setting", type=pathlib.Path)
-    @plac.opt('preprocessing_data', abbrev='preprocessing_data', help="Script Setting", type=bool)
     @plac.opt('training_images_amount', abbrev='training_images_amount', help="Script Setting", type=int)
     @plac.opt('test_images_amount', abbrev='test_images_amount', help="Script Setting", type=int)
-    @plac.opt('use_tf_dataset', abbrev='use_tf_dataset', help="Script Setting", type=bool)
     @plac.opt('plotting_potentials', abbrev='plotting_potentials', help="Script Setting", type=bool)
     @plac.opt('visualize_weights', abbrev='visualize_weights', help="Script Setting", type=bool)
     @plac.opt('testing', abbrev='testing', help="Script Setting", type=bool)
@@ -100,7 +96,7 @@ class Parameters:
     @plac.opt('weight4', abbrev='weight4', help="Receptive Field Parameter", type=float)
     @plac.opt('min_frequency', abbrev='min_frequency', help="Spike Train Coding Parameter", type=float)
     @plac.opt('max_frequency', abbrev='max_frequency', help="Spike Train Coding Parameter", type=float)
-    def __init__(self, mode=mode, weights_path=weights_path, labels_path=labels_path, image_inference_path=image_inference_path, debugging_interval=debugging_interval, checkpoint_interval=checkpoint_interval, train_dataset_path=train_dataset_path, test_dataset_path=test_dataset_path, preprocessing_data=preprocessing_data, training_images_amount=training_images_amount, test_images_amount=test_images_amount, use_tf_dataset=use_tf_dataset, plotting_potentials=plotting_potentials, visualize_weights=visualize_weights, testing=testing, image_train_time=image_train_time, past_window=past_window, epochs=epochs, image_size=image_size, resting_potential=resting_potential, layer1_size=layer1_size, layer2_size=layer2_size, inhibitory_potential=inhibitory_potential, spike_threshold=spike_threshold, hyperpolarization_potential=hyperpolarization_potential, spike_drop_rate=spike_drop_rate, threshold_drop_rate=threshold_drop_rate, min_weight=min_weight, max_weight=max_weight, STDP_offset=STDP_offset, sigma=sigma, A_plus=A_plus, A_minus=A_minus, tau_plus=tau_plus, tau_minus=tau_minus, mu=mu, weight1=weight1, weight2=weight2, weight3=weight3, weight4=weight4, min_frequency=min_frequency, max_frequency=max_frequency):
+    def __init__(self, mode=mode, weights_path=weights_path, labels_path=labels_path, image_inference_path=image_inference_path, debugging_interval=debugging_interval, checkpoint_interval=checkpoint_interval, train_dataset_path=train_dataset_path, test_dataset_path=test_dataset_path, training_images_amount=training_images_amount, test_images_amount=test_images_amount, plotting_potentials=plotting_potentials, visualize_weights=visualize_weights, testing=testing, image_train_time=image_train_time, past_window=past_window, epochs=epochs, image_size=image_size, resting_potential=resting_potential, layer1_size=layer1_size, layer2_size=layer2_size, inhibitory_potential=inhibitory_potential, spike_threshold=spike_threshold, hyperpolarization_potential=hyperpolarization_potential, spike_drop_rate=spike_drop_rate, threshold_drop_rate=threshold_drop_rate, min_weight=min_weight, max_weight=max_weight, STDP_offset=STDP_offset, sigma=sigma, A_plus=A_plus, A_minus=A_minus, tau_plus=tau_plus, tau_minus=tau_minus, mu=mu, weight1=weight1, weight2=weight2, weight3=weight3, weight4=weight4, min_frequency=min_frequency, max_frequency=max_frequency):
         self.mode = mode
         self.weights_path = weights_path
         self.labels_path = labels_path
@@ -109,10 +105,8 @@ class Parameters:
         self.checkpoint_interval = checkpoint_interval
         self.train_dataset_path = train_dataset_path
         self.test_dataset_path = test_dataset_path
-        self.preprocessing_data = preprocessing_data
         self.training_images_amount = training_images_amount
         self.test_images_amount = test_images_amount
-        self.use_tf_dataset = use_tf_dataset
         self.plotting_potentials = plotting_potentials
         self.visualize_weights = visualize_weights
         self.testing = testing
