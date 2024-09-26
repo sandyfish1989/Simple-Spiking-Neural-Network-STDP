@@ -18,7 +18,7 @@ class Parameters:
     testing = True
 
     # Simulation Parameters
-    image_train_time = 350  # Training time for every image
+    image_train_time = 100  # Training time for every image
     past_window = -5
     epochs = 3
 
@@ -74,7 +74,7 @@ class Parameters:
     @plac.opt('epochs', abbrev='epochs', help="Simulation Parameter", type=int)
     @plac.opt('image_size', abbrev='image_size', help="Input Parameter", type=tuple)
     @plac.opt('resting_potential', abbrev='resting_potential', help="Simulation Parameter", type=int)
-    @plac.opt('layer1_size', abbrev='layer1_size', help="Simulation Parameter", type=int)
+    # @plac.opt('layer1_size', abbrev='layer1_size', help="Simulation Parameter", type=int)
     @plac.opt('layer2_size', abbrev='layer2_size', help="Simulation Parameter", type=int)
     @plac.opt('inhibitory_potential', abbrev='inhibitory_potential', help="Neuron Parameter", type=int)
     @plac.opt('spike_threshold', abbrev='spike_threshold', help="Neuron Parameter", type=int)
@@ -96,7 +96,7 @@ class Parameters:
     @plac.opt('weight4', abbrev='weight4', help="Receptive Field Parameter", type=float)
     @plac.opt('min_frequency', abbrev='min_frequency', help="Spike Train Coding Parameter", type=float)
     @plac.opt('max_frequency', abbrev='max_frequency', help="Spike Train Coding Parameter", type=float)
-    def __init__(self, mode=mode, weights_path=weights_path, labels_path=labels_path, image_inference_path=image_inference_path, debugging_interval=debugging_interval, checkpoint_interval=checkpoint_interval, train_dataset_path=train_dataset_path, test_dataset_path=test_dataset_path, training_images_amount=training_images_amount, test_images_amount=test_images_amount, plotting_potentials=plotting_potentials, visualize_weights=visualize_weights, testing=testing, image_train_time=image_train_time, past_window=past_window, epochs=epochs, image_size=image_size, resting_potential=resting_potential, layer1_size=layer1_size, layer2_size=layer2_size, inhibitory_potential=inhibitory_potential, spike_threshold=spike_threshold, hyperpolarization_potential=hyperpolarization_potential, spike_drop_rate=spike_drop_rate, threshold_drop_rate=threshold_drop_rate, min_weight=min_weight, max_weight=max_weight, STDP_offset=STDP_offset, sigma=sigma, A_plus=A_plus, A_minus=A_minus, tau_plus=tau_plus, tau_minus=tau_minus, mu=mu, weight1=weight1, weight2=weight2, weight3=weight3, weight4=weight4, min_frequency=min_frequency, max_frequency=max_frequency):
+    def __init__(self, mode=mode, weights_path=weights_path, labels_path=labels_path, image_inference_path=image_inference_path, debugging_interval=debugging_interval, checkpoint_interval=checkpoint_interval, train_dataset_path=train_dataset_path, test_dataset_path=test_dataset_path, training_images_amount=training_images_amount, test_images_amount=test_images_amount, plotting_potentials=plotting_potentials, visualize_weights=visualize_weights, testing=testing, image_train_time=image_train_time, past_window=past_window, epochs=epochs, image_size=image_size, resting_potential=resting_potential, layer2_size=layer2_size, inhibitory_potential=inhibitory_potential, spike_threshold=spike_threshold, hyperpolarization_potential=hyperpolarization_potential, spike_drop_rate=spike_drop_rate, threshold_drop_rate=threshold_drop_rate, min_weight=min_weight, max_weight=max_weight, STDP_offset=STDP_offset, sigma=sigma, A_plus=A_plus, A_minus=A_minus, tau_plus=tau_plus, tau_minus=tau_minus, mu=mu, weight1=weight1, weight2=weight2, weight3=weight3, weight4=weight4, min_frequency=min_frequency, max_frequency=max_frequency):
         self.mode = mode
         self.weights_path = weights_path
         self.labels_path = labels_path

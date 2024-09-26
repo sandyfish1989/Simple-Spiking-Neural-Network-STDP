@@ -162,3 +162,5 @@ visualized_weights/*
 .DS_Store
 
 .idea/
+
+Checkpoints

@@ -58,6 +58,11 @@ class SNN:
         image_size_x = image.shape[0]
         image_size_y = image.shape[1]
 
+
+        # weight1 = 0.625
+        # weight2 = 0.125
+        # weight3 = -0.125
+        # weight4 = -.5
         # Receptive Field Kernel
         receptive_field = [
             [self.parameters.weight4, self.parameters.weight3, self.parameters.weight2, self.parameters.weight3, self.parameters.weight4],
@@ -208,7 +213,7 @@ class SNN:
         utils.save_checkpoint("Final", synapses, neuron_labels_lookup, self)
 
         if self.parameters.plotting_potentials:
-            utils.plot_potentials_over_time(potential_thresholds, potentials)
+            utils.plot_potentials_over_time(self, potential_thresholds, potentials)
 
         print("Finished Training. Saved Weights and Labels.")
 
