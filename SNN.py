@@ -325,16 +325,25 @@ class SNN:
         winner_neuron = output_layer[winner_index]
         return winner_index, winner_neuron
 
-    def calculate_potentials_and_adapt_thresholds(self, current_potentials, neuron, neuron_index, spike_train, synapses, time_step):
-        if neuron.rest_until < time_step:
-            # Increase potential according to the sum of synapses inputs
-            neuron.potential += np.dot(synapses[neuron_index], spike_train[:, time_step])
+    def calculate_potentials_and_adapt_thresholds(self, current_potentials, neuron, neuron_index, spike_train, synapses,
+                                                  time_step):
+        if neuron.rest_until >= time_step:
+            return
 
-            if neuron.potential > self.parameters.resting_potential:
-                neuron.potential -= self.parameters.spike_drop_rate
+        # 更新膜电位
+        neuron.potential += np.dot(synapses[neuron_index], spike_train[:, time_step])
 
-                if neuron.adaptive_spike_threshold > self.parameters.spike_threshold:
-                    neuron.adaptive_spike_threshold -= self.parameters.threshold_drop_rate
+        if neuron.potential > self.parameters.resting_potential:
+            neuron.potential -= self.parameters.spike_drop_rate
 
-            current_potentials[neuron_index] = neuron.potential
+            # 更新自适应阈值
+            neuron.adaptive_spike_threshold = max(
+                neuron.adaptive_spike_threshold - self.parameters.threshold_drop_rate,
+                self.parameters.spike_threshold
+            )
+
+        # 存储当前膜电位
+        current_potentials[neuron_index] = neuron.potential
+
+
 
