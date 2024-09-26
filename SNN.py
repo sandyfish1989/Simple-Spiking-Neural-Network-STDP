@@ -52,7 +52,7 @@ class SNN:
 
                 spike_trains.append(spike_train)
 
-        return spike_trains  # (784, 351)
+        return spike_trains  # (784, times)
 
     def receptive_field(self, image: np.ndarray):
         image_size_x = image.shape[0]
