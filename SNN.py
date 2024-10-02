@@ -15,16 +15,6 @@ class SNN:
         self.initial_timestamp = time.time()
         self.readable_initial_timestamp = time.strftime("%Y_%m_%d-%H_%M_%S")
 
-    def run(self):
-        if self.parameters.mode == "train":
-            self.train()
-
-        elif self.parameters.mode == "test":
-            pass
-
-        elif self.parameters.mode == "inference":
-            prediction = self.inference(self.parameters.image_inference_path, self.parameters.weights_path, self.parameters.labels_path)
-            print(f"Prediction: {prediction}")
 
     def encode_image_to_spike_train(self, image: np.ndarray):
         spike_trains = []
@@ -54,51 +44,27 @@ class SNN:
 
         return spike_trains  # (784, times)
 
-    def receptive_field(self, image: np.ndarray):
-        image_size_x = image.shape[0]
-        image_size_y = image.shape[1]
+    def grey_image(self, image: np.ndarray):
+        return image / 255.0
 
-
-        # weight1 = 0.625
-        # weight2 = 0.125
-        # weight3 = -0.125
-        # weight4 = -.5
-        # Receptive Field Kernel
-        receptive_field = [
-            [self.parameters.weight4, self.parameters.weight3, self.parameters.weight2, self.parameters.weight3, self.parameters.weight4],
-            [self.parameters.weight3, self.parameters.weight2, self.parameters.weight1, self.parameters.weight2, self.parameters.weight3],
-            [self.parameters.weight2, self.parameters.weight1, 1, self.parameters.weight1, self.parameters.weight2],
-            [self.parameters.weight3, self.parameters.weight2, self.parameters.weight1, self.parameters.weight2, self.parameters.weight3],
-            [self.parameters.weight4, self.parameters.weight3, self.parameters.weight2, self.parameters.weight3, self.parameters.weight4]]
-
-        convoluted_image = np.zeros(shape=image.shape)
-
-        window = [-2, -1, 0, 1, 2]
-        x_offset = 2
-        y_offset = 2
-
-        # Apply Convolution with Receptive Field Kernel
-        for x_image_index in range(image_size_x):
-            for y_image_index in range(image_size_y):
-                summation = 0
-                for x_kernel_index in window:
-                    for y_kernel_index in window:
-                        if (x_image_index + x_kernel_index) >= 0 and (
-                                x_image_index + x_kernel_index) <= image_size_x - 1 and (
-                                y_image_index + y_kernel_index) >= 0 and (
-                                y_image_index + y_kernel_index) <= image_size_y - 1:
-                            summation = summation + (receptive_field[x_offset + x_kernel_index][y_offset + y_kernel_index] *
-                                                     image[x_image_index + x_kernel_index][
-                                                         y_image_index + y_kernel_index]) / 255
-                convoluted_image[x_image_index][y_image_index] = summation
-        return convoluted_image
 
     # STDP reinforcement learning curve
     def STDP_weighting_curve(self, delta_time: int):
-        if delta_time > 0:
-            return -self.parameters.A_plus * (np.exp(-float(delta_time) / self.parameters.tau_plus) - self.parameters.STDP_offset)
-        if delta_time <= 0:
-            return self.parameters.A_minus * (np.exp(float(delta_time) / self.parameters.tau_minus) - self.parameters.STDP_offset)
+        if delta_time < 0: # LTP
+            mapped_ltp_time = 400 + (1600 - 400) * (-delta_time) / 20
+            A_plus = 2.48406  # Amplitude of LTP (Long-Term Potentiation) when Δt > 0
+            tau_plus = 483.6014  # Time constant for LTP
+            y0_plus = -0.0654
+            delta_W = A_plus * np.exp(-mapped_ltp_time / tau_plus) + y0_plus
+            return delta_W * self.parameters.ltp_lr
+        else:
+            mapped_ltd_time = -200 - (1600 - 200) * delta_time / 20
+            A_minus = -1.54537  # Amplitude of LTD (Long-Term Depression) when Δt < 0
+            tau_minus = -393.8205  # Time constant for LTD
+            y0_minus = -0.15
+            delta_W = A_minus * np.exp(-mapped_ltd_time / tau_minus) + y0_minus
+            return delta_W * self.parameters.ltd_lr
+
 
     # STDP weight update rule
     def update_synapse(self, synapse_weight, weight_factor):
@@ -115,14 +81,6 @@ class SNN:
         self.initial_timestamp = time.time()
         self.readable_initial_timestamp = time.strftime("%Y_%m_%d-%H_%M_%S")
 
-        if self.parameters.plotting_potentials:
-            potentials = []
-            potential_thresholds = []
-
-            for image_path in range(self.parameters.layer2_size):
-                potentials.append([])
-                potential_thresholds.append([])
-
         testing_accuracies = []
 
         time_of_learning = np.arange(1, self.parameters.image_train_time + 1, 1)
@@ -137,7 +95,7 @@ class SNN:
         synapse_memory = np.zeros((self.parameters.layer2_size, self.parameters.layer1_size))
 
         # Creating Mapping Neurons which contains the Number they have learned
-        neuron_labels_lookup = np.repeat(-1, self.parameters.layer2_size)
+        neuron_labels_lookup = np.zeros((self.parameters.layer2_size, 10))
 
         X_train, Y_train, X_test, Y_test = utils.prepare_data(self)
 
@@ -149,7 +107,7 @@ class SNN:
                 time_start = time.time()
 
                 # Convolving image with receptive field and encoding to generate spike train
-                spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
+                spike_train = np.array(self.encode_image_to_spike_train(self.grey_image(image)))
 
                 # Local variables
                 winner_index = None
@@ -163,10 +121,6 @@ class SNN:
 
                     for neuron_index, neuron in enumerate(output_layer):
                         self.calculate_potentials_and_adapt_thresholds(current_potentials, neuron, neuron_index, spike_train, synapses, time_step)
-
-                        if self.parameters.plotting_potentials:
-                            potentials[neuron_index].append(neuron.potential)  # Only for plotting: Changing potential overtime
-                            potential_thresholds[neuron_index].append(neuron.adaptive_spike_threshold)  # Only for plotting: Changing threshold overtime
 
                     # Determine the winner neuron and index
                     winner_index, winner_neuron = self.get_winner_neuron(current_potentials, output_layer)
@@ -190,7 +144,7 @@ class SNN:
                 self.reset_neurons(output_layer)
 
                 # Assigning Label to Winner Neuron
-                neuron_labels_lookup[winner_index] = int(label)
+                neuron_labels_lookup[winner_index][int(label)] += 1
 
             # TODO PROBABLY WRONG AND DANGEROUS OR SUPER IMPORTANT
             """for layer2_index in range(self.parameters.layer2_size):
@@ -200,20 +154,17 @@ class SNN:
 """         
             # Accuracy tested against test dataset after each epoch
             if self.parameters.testing:
-                testing_accuracy = self.test(synapses, neuron_labels_lookup, (X_test, Y_test))
+                testing_accuracy = self.test(synapses, np.argmax(neuron_labels_lookup, axis=1), (X_test, Y_test))
                 testing_accuracies.append(testing_accuracy)
 
             if epoch % self.parameters.debugging_interval == 0:
                 self.debug_training_state(epoch, count_spikes, testing_accuracies)
 
             if epoch % self.parameters.checkpoint_interval == 0 and self.parameters.checkpoint_interval != 0:
-                utils.save_checkpoint(epoch, synapses, neuron_labels_lookup, self)
+                utils.save_checkpoint(epoch, synapses, np.argmax(neuron_labels_lookup, axis=1), self)
 
         # Final Checkpoint
-        utils.save_checkpoint("Final", synapses, neuron_labels_lookup, self)
-
-        if self.parameters.plotting_potentials:
-            utils.plot_potentials_over_time(self, potential_thresholds, potentials)
+        utils.save_checkpoint("Final", synapses, np.argmax(neuron_labels_lookup, axis=1), self)
 
         print("Finished Training. Saved Weights and Labels.")
 
@@ -224,7 +175,7 @@ class SNN:
         predictions = []
         actual_labels = []
         for image, label in zip(X_test, Y_test):
-            spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
+            spike_train = np.array(self.encode_image_to_spike_train(self.grey_image(image)))
             prediction = self.infer(spike_train, synapses, neuron_labels_lookup)
             predictions.append(prediction)
             actual_labels.append(label)
@@ -245,7 +196,7 @@ class SNN:
         if labels_matrix_path is None:
             labels_matrix_path = self.parameters.labels_path
         image = iio.imread(image_path)
-        spike_train = np.array(self.encode_image_to_spike_train(self.receptive_field(image)))
+        spike_train = np.array(self.encode_image_to_spike_train(self.grey_image(image)))
         synapses = np.loadtxt(synapse_weights_path, delimiter=",")
         neuron_labels_lookup = np.loadtxt(labels_matrix_path, delimiter=',')
 
@@ -284,7 +235,8 @@ class SNN:
 
 
     def debug_training_state(self, epoch, count_spikes, testing_accuracies):
-        print(f"Epoch: {epoch} Testing Accuracy: {round(testing_accuracies[-1], 2) if testing_accuracies else 'None'} Time passed: {round(time.time() - self.initial_timestamp, 2)} seconds")
+        print(f"Epoch: {epoch} Testing Accuracy: {round(testing_accuracies[-1], 2) if testing_accuracies else 'None'}"
+              f" Time passed: {round(time.time() - self.initial_timestamp, 2)} seconds")
 
         # To write intermediate synapses for neurons
         # for p in range(layer2_size):

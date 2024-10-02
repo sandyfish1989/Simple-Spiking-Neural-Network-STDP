@@ -29,48 +29,5 @@ def save_checkpoint(epoch, synapses, neuron_labels_lookup, snn):
     np.savetxt(weights_path, synapses, delimiter=",")
     np.savetxt(labels_path, neuron_labels_lookup, delimiter=',')
 
-    if snn.parameters.visualize_weights:
-        visualize_synapse_weights_and_save(neuron_labels_lookup, synapses, visualized_weights_path, snn)
-
-def visualize_synapse_weights_and_save(label_neuron, synapses, save_path, snn):
-    save_path = Path(save_path)  # 将 save_path 转换为 Path 对象
-    for layer2_index in range(snn.parameters.layer2_size):
-        if label_neuron[layer2_index] == -1:
-            for layer1_index in range(snn.parameters.layer1_size):
-                synapses[layer2_index][layer1_index] = 0
-        image = convert_weights_to_image(snn, synapses[layer2_index])
-
-        # 使用 Path 对象来拼接路径
-        imageio.imwrite(save_path / f'Neuron_{layer2_index}.png', image.astype(np.uint8))
 
 
-def visualize_synapse_weights_and_save(label_neuron, synapses, save_path, snn):
-    save_path = Path(save_path)  # 将 save_path 转换为 Path 对象
-    for layer2_index in range(snn.parameters.layer2_size):
-        if label_neuron[layer2_index] == -1:
-            for layer1_index in range(snn.parameters.layer1_size):
-                synapses[layer2_index][layer1_index] = 0
-        image = convert_weights_to_image(snn, synapses[layer2_index])
-
-        # 使用 Path 对象来拼接路径
-        imageio.imwrite(save_path / f'Neuron_{layer2_index}.png', image.astype(np.uint8))
-
-
-def convert_weights_to_image(snn, weights):
-    weights = np.array(weights)
-    weights = np.reshape(weights, snn.parameters.image_size)
-    image = np.zeros(snn.parameters.image_size)
-    for x_coordinate in range(snn.parameters.image_size[0]):
-        for y_coordinate in range(snn.parameters.image_size[1]):
-            image[x_coordinate][y_coordinate] = int(
-                np.interp(weights[x_coordinate][y_coordinate], [snn.parameters.min_weight, snn.parameters.max_weight], [0, 255]))
-    return image
-
-def plot_potentials_over_time(snn, potential_thresholds, potentials):
-    # Plotting
-    spaced_potentials = np.arange(0, len(potentials[0]), 1)
-    for i in range(snn.parameters.layer2_size):
-        axes = plt.gca()
-        plt.plot(spaced_potentials, potential_thresholds[i], 'r')
-        plt.plot(spaced_potentials, potentials[i])
-        plt.show()
